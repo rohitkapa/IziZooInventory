@@ -3,7 +3,7 @@
   */
 
 //This application is designed to meet requirements of IZI zoo inventory management
-
+//the application is completely not tested for all use cases like when user enters negative/inappropriate values
 //Following packages are required
 import java.text.SimpleDateFormat
 import scala.util.control.Breaks._
@@ -30,20 +30,15 @@ object IziInventory {
     try {
       scala.tools.nsc.io.File("inventory.txt").appendAll(zooId + "," + Inventory + "," + dateString + "\n")
     }
-
     println("Inventory Added")
-
   }
 
   def addFeed(zooId:Int, animalId:String, speciesId:String, feedQuantity:Int,remainingFeed:Int, timeString:String): Unit =
   {
-
     try {
       scala.tools.nsc.io.File("feed.txt").appendAll(zooId + "," + animalId + "," + speciesId + "," + feedQuantity + ","+remainingFeed+","+ timeString + "\n")
     }
-
     println("Feed Added")
-
   }
 
   def timeStamp ( x:String) :java.sql.Date = {
@@ -68,8 +63,10 @@ object IziInventory {
     val zooInventoryWastage = collection.mutable.Map[Int, Int]().withDefaultValue(0)
 
     while (true) {
+
       println("What would you like to do? \n 1. Add Inventory \n 2. Add Feed details \n 3. Dashboard or generate report \n 4. Exit System")
       val choice = readInt()
+
       if (choice == 1) {
         println("Enter Zoo ID")
         val zooID = readInt()
@@ -85,6 +82,7 @@ object IziInventory {
         }
         zooInventoryRT(zooID) += (inventory - zooInventoryWastage(zooID))
       }
+
       else if (choice == 2) {
         println("Enter Zoo ID")
         val zooID = readInt()
@@ -103,35 +101,40 @@ object IziInventory {
         if (remainingFeed<30){
           println(s"Alert The feed quantity available for zoo $zooID is running low at $remainingFeed")
         }
-
         addFeed(zooID,animalId,speciesId,feedQuantity,remainingFeed,dateString)
       }
-      else if (choice == 3) {
 
+      else if (choice == 3) {
         val feedRdd = sc.textFile("feed.txt")
         val feedRddMap = feedRdd.map(_.split(",")).map(p => Feed(p(0), p(1), p(2), p(3).toInt, p(4).toInt, timeStamp(p(5)))).toDF()
-
         println("Which report would you choose? \n 1. How much was each individual animal fed per day on average? \n 2. How many times per day are animals fed on average? Group by species.\n 3. How much food is wasted per zoo? \n 4. Which species of animal at which zoos are being fed above/below average\n(by species) by some percentage?")
 //        feedRddMap.show()
         val reportChoice = readInt()
-
+        //control structure for dashboard features
         if(reportChoice == 1){
+          //generating report using sparksql and dataframe functions
           val groupfeed1 = feedRddMap.groupBy("time","animalID").agg(sum("feedquantity").as("sumFeedID")).groupBy("animalID").agg(avg("sumFeedID"))
           groupfeed1.show()
         }
         else if(reportChoice == 2){
+          //generating report using sparksql and dataframe functions
           val groupfeed2 = feedRddMap.groupBy("time","animalID","speciesID").agg(count("feedquantity").as("coundfeedID")).groupBy("speciesID").agg(avg("coundfeedID"))
           groupfeed2.show()
         }
         else if(reportChoice == 3){
+          //repZooInventoryWastage variable is calculated in real time in memory i.e. once application terminates values are not saved
+          // only when application is running we can find the wastage for that particular session.
+          // It can be made available by calculating from inventory table(text file).
           println("Food wasted per zoo")
           val repZooInventoryWastage = zooInventoryWastage.map(p=>FoodWastage(p._1,p._2))
           println(repZooInventoryWastage)
         }
         else if(reportChoice == 4){
-          val groupfeed1 = feedRddMap.groupBy("time","animalID").agg(sum("feedID").as("sumFeedID")).groupBy("animalID").agg(avg("sumFeedID"))
+          //val groupfeed1 = feedRddMap.groupBy("time","animalID").agg(sum("feedID").as("sumFeedID")).groupBy("animalID").agg(avg("sumFeedID"))
+          println("Yet to implement")
         }
       }
+
       else if(choice==4){
         break
       }
