@@ -1,9 +1,20 @@
+
 /**
   * Created by rohit on 3/23/2016.
   */
 
-// Starting the project
 //This application is designed to meet requirements of IZI zoo inventory management
+
+//Following packages are required
+import java.text.SimpleDateFormat
+
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.{SparkConf, SparkContext}
+
+//Following classes are defined
+case class Feed(zooId:String, animalID:String, speciesID:String, feedquantity:Int,remainingFeed:Int, time:java.sql.Date)
+
+
 object IziInventory {
 
   // Functionality to add inventory and new stock to the system by vendors
@@ -30,7 +41,22 @@ object IziInventory {
 
   }
 
+  def timeStamp ( x:String) :java.sql.Date = {
+    //val curDate = new Date();
+    val format = new SimpleDateFormat("yyyy-MM-dd-hh-mm")
+    val d = format.parse(x)
+    val sqlDate = new java.sql.Date(d.getTime)
+    return sqlDate
+  }
+
+
   def main(args: Array[String]) {
+
+    //creating sc and sql contexts
+    val conf = new SparkConf().setAppName("ZooIZI").setMaster("local[*]").set("spark.driver.allowMultipleContexts", "true")
+    val sc = new SparkContext(conf)
+    val sqlContext = new SQLContext(sc)
+    import sqlContext.implicits._
 
     // keyvalue maps for logic
     val zooInventoryRT = collection.mutable.Map[Int, Int]().withDefaultValue(0)
@@ -80,7 +106,13 @@ object IziInventory {
         addFeed(zooID,animalId,speciesId,feedQuantity,remainingFeed,dateString)
       }
       else if (choice == 3) {
+
+        val feedRdd = sc.textFile("feed.txt")
+        val feedRddMap = feedRdd.map(_.split(",")).map(p => Feed(p(0), p(1), p(2), p(3).toInt, p(4).toInt, timeStamp(p(5)))).toDF()
+
         println("Which report would you choose? \n 1. How much was each individual animal fed per day on average? \n 2. How many times per day are animals fed on average? Group by species.\n 3. How much food is wasted per zoo? \n 4. Which species of animal at which zoos are being fed above/below average\n(by species) by some percentage?")
+        feedRddMap.show()
+
       }
     }
   }
