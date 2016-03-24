@@ -1,4 +1,3 @@
-
 /**
   * Created by rohit on 3/23/2016.
   */
@@ -7,7 +6,7 @@
 
 //Following packages are required
 import java.text.SimpleDateFormat
-
+import scala.util.control.Breaks._
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.SQLContext
@@ -19,7 +18,7 @@ import org.apache.spark.sql.functions._
 
 //Following classes are defined
 case class Feed(zooId:String, animalID:String, speciesID:String, feedquantity:Int,remainingFeed:Int, time:java.sql.Date)
-
+case class FoodWastage(zooId:Int, foodWastage:Int)
 
 object IziInventory {
 
@@ -84,11 +83,7 @@ object IziInventory {
         if (zooInventoryRT(zooID) != 0) {
           zooInventoryWastage(zooID) += Math.abs(inventory - zooInventoryRT(zooID))
         }
-
         zooInventoryRT(zooID) += (inventory - zooInventoryWastage(zooID))
-        print(zooInventoryWastage(zooID))
-        print(zooInventoryRT(zooID))
-
       }
       else if (choice == 2) {
         println("Enter Zoo ID")
@@ -125,13 +120,21 @@ object IziInventory {
           groupfeed1.show()
         }
         else if(reportChoice == 2){
-          }
+          val groupfeed2 = feedRddMap.groupBy("time","animalID","speciesID").agg(count("feedquantity").as("coundfeedID")).groupBy("speciesID").agg(avg("coundfeedID"))
+          groupfeed2.show()
+        }
         else if(reportChoice == 3){
-          }
+          println("Food wasted per zoo")
+          val repZooInventoryWastage = zooInventoryWastage.map(p=>FoodWastage(p._1,p._2))
+          println(repZooInventoryWastage)
+        }
         else if(reportChoice == 4){
-          }
+          val groupfeed1 = feedRddMap.groupBy("time","animalID").agg(sum("feedID").as("sumFeedID")).groupBy("animalID").agg(avg("sumFeedID"))
+        }
       }
-
+      else if(choice==4){
+        break
+      }
     }
   }
 }
