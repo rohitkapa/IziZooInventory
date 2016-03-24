@@ -10,6 +10,12 @@ import java.text.SimpleDateFormat
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SQLContext
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+import org.apache.spark.sql.{Row, DataFrame}
+import org.apache.spark.sql.functions._
+
 
 //Following classes are defined
 case class Feed(zooId:String, animalID:String, speciesID:String, feedquantity:Int,remainingFeed:Int, time:java.sql.Date)
@@ -111,9 +117,21 @@ object IziInventory {
         val feedRddMap = feedRdd.map(_.split(",")).map(p => Feed(p(0), p(1), p(2), p(3).toInt, p(4).toInt, timeStamp(p(5)))).toDF()
 
         println("Which report would you choose? \n 1. How much was each individual animal fed per day on average? \n 2. How many times per day are animals fed on average? Group by species.\n 3. How much food is wasted per zoo? \n 4. Which species of animal at which zoos are being fed above/below average\n(by species) by some percentage?")
-        feedRddMap.show()
+//        feedRddMap.show()
+        val reportChoice = readInt()
 
+        if(reportChoice == 1){
+          val groupfeed1 = feedRddMap.groupBy("time","animalID").agg(sum("feedquantity").as("sumFeedID")).groupBy("animalID").agg(avg("sumFeedID"))
+          groupfeed1.show()
+        }
+        else if(reportChoice == 2){
+          }
+        else if(reportChoice == 3){
+          }
+        else if(reportChoice == 4){
+          }
       }
+
     }
   }
 }
